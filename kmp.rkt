@@ -116,13 +116,13 @@
   (check-substring-spec 'string-contains-ci text t-start t-end)
   (%kmp-search pattern text char-ci=? 0 (string-length pattern) t-start t-end))
 
-(struct matcher ([pattern : String] [vec : (Immutable-Vectorof Integer)] [c= : Char=]))
+(struct matcher ([pattern : String] [vec : (Vectorof Integer)] [c= : Char=]))
 
 (: make-matcher (->* (String) (#:case-insensitive Boolean) matcher))
 (define (make-matcher pat #:case-insensitive [case-insensitive? #f])
   (let ([c= (if case-insensitive? char-ci=? char=?)])
     (matcher (string->immutable-string pat)
-             (vector->immutable-vector (make-kmp-restart-vector pat c=))
+             (make-kmp-restart-vector pat c=)
              c=)))
 
 (: matcher-ci? (-> matcher Boolean))

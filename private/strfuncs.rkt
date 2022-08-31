@@ -2,9 +2,25 @@
 
 ;;; Utility functions used by the searcher modules
 
-(require/typed/provide srfi/13
-  [check-substring-spec (-> Any String Integer Integer Any)])
-(provide hash-ref/default substring=? substring-ci=? String=)
+(provide hash-ref/default substring=? substring-ci=? String= check-substring-spec)
+
+;;; Taken from SRFI-13 reference. Most of these checks aren't needed in Typed Racket
+(: substring-spec-ok? (-> String Index Index Boolean))
+(define (substring-spec-ok? s start end)
+  (and ;(string? s)
+       ;(integer? start)
+       ;(exact? start)
+       ;(integer? end)
+       ;(exact? end)
+       (<= 0 start)
+       (<= start end)
+       (<= end (string-length s))))
+
+;;; Taken from SRFI-13 reference
+(: check-substring-spec (-> Any String Index Index Any))
+(define (check-substring-spec proc s start end)
+  (unless (substring-spec-ok? s start end)
+      (error "Illegal substring spec." proc s start end)))
 
 (define-type String= (-> String Index String Boolean))
 

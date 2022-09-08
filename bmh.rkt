@@ -4,8 +4,13 @@
 
 (require "private/strfuncs.rkt")
 
-(provide string-contains string-contains-ci make-matcher matcher?
-         matcher-ci? matcher-pattern find-string find-all-strings)
+(provide string-contains string-contains-ci
+         make-matcher matcher? matcher-ci? matcher-pattern
+         find-string find-all-strings
+         byte-string-contains
+         make-byte-matcher byte-matcher? byte-matcher-pattern
+         find-byte-string find-all-byte-strings
+         )
 
 (struct matcher ([pattern : String] [table : (Immutable-HashTable Char Index)] [s= : String=]))
 
@@ -108,3 +113,55 @@
 (define (string-contains-ci text pat [start 0] [end (string-length text)])
   (check-substring-spec 'string-contains-ci text start end)
   (%string-contains #t text pat start end))
+
+;;; Byte string routines
+
+(struct byte-matcher ([pattern : Bytes] [table : (Mutable-Vectorof Index)]))
+
+(: %make-byte-table (-> Bytes (Mutable-Vectorof Index)))
+(define (%make-byte-table pat)
+  (let* ([patlen : Index (bytes-length pat)]
+         [table : (Mutable-Vectorof Index) (make-vector 256 patlen)])
+    (for ([i (in-range (- patlen 1))])
+      (vector-set! table (bytes-ref pat i) (cast (- patlen 1 i) Index)))
+    table))
+
+(: make-byte-matcher (-> Bytes byte-matcher))
+(define (make-byte-matcher pat)
+  (byte-matcher (bytes->immutable-bytes pat) (%make-byte-table pat)))
+
+(: %find-byte-string (-> byte-matcher Bytes Index Index (Option Index)))
+(define (%find-byte-string m text start end)
+  (let* ([table (byte-matcher-table m)]
+         [pat (byte-matcher-pattern m)]
+         [patlen (bytes-length pat)]
+         [textlen (+ start (- end start))])
+    (let loop ([skip : Index start])
+      (if (>= (- textlen skip) patlen)
+          (if (subbytes=? text skip pat)
+              skip
+              (loop (cast (+ skip (vector-ref table (bytes-ref text (- (+ skip patlen) 1)))) Index)))
+          #f))))
+
+(: find-byte-string (->* (byte-matcher Bytes) (Index Index) (Option Index)))
+(define (find-byte-string m text [start 0] [end (bytes-length text)])
+  (%find-byte-string m text start end))
+
+(: find-all-byte-strings (->* (byte-matcher Bytes) (Index Index #:overlap Boolean) (Listof Index)))
+(define (find-all-byte-strings m text [start 0] [end (bytes-length text)] #:overlap [overlap? #t])
+;  (check-substring-spec 'find-all-strings text start end)
+  (let* ([patlen (bytes-length (byte-matcher-pattern m))]
+         [offset : Index (if overlap? 1 patlen)])
+    (let loop ([acc : (Listof Index) '()]
+               [start : Index start])
+      (if (< start end)
+          (let ([pos (%find-byte-string m text start end)])
+            (if pos
+                (loop (cons pos acc) (cast (+ pos offset) Index))
+                (reverse acc)))
+          (reverse acc)))))
+
+(: byte-string-contains (->* (Bytes Bytes) (Index Index) (Option Index)))
+(define (byte-string-contains haystack needle [start 0] [end (bytes-length haystack)])
+  (let ([bmh-bs (make-byte-matcher needle)])
+    (%find-byte-string bmh-bs haystack start end)))

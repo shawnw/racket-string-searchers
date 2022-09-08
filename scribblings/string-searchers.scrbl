@@ -10,7 +10,7 @@
 @defmodule[string-searchers]
 
 Provides a variety of string search algorithms written in Typed
-Racket. They look for sequences of exact code points, not
+Racket. They look for sequences of exact code points or bytes, not
 equivalencies. When using with non-ASCII text, consider normalizing
 strings first.
 
@@ -47,13 +47,14 @@ functions instead.
 
 @defproc[(kmp-make-matcher [pattern String] [#:case-insensitive case-insensitive? Boolean #f]) kmp-matcher]{
 
-Compiles a search string into a matcher object, optionally using case-insensitive searching.
+Compiles a search string into a matcher object, optionally using
+case-insensitive searching.
 
 }
 
 @defproc[(kmp-matcher? [obj Any]) Boolean]{
 
-Returns true if its argument is a kmp-matcher object.
+Returns true if its argument is a @racketidfont{kmp-matcher} object.
 
 }
 
@@ -72,7 +73,8 @@ Returns the search string for this matcher.
 @defproc[(kmp-find-string [m kmp-matcher] [text String] [start Index 0] [end Index (string-length text)])
          (Option Index)]{
 
-Return the index of the first occurance of the matcher's search string in text, or @code{#f} if not found.
+Return the index of the first occurance of the matcher's search string
+in text, or @code{#f} if not found.
 
 }
 
@@ -91,7 +93,10 @@ will return @code{'(0 1)} when true, @code{(0)} when false.
 Search for strings using the
 @hyperlink["https://en.wikipedia.org/wiki/Boyer%E2%80%93Moore%E2%80%93Horspool_algorithm"]{Boyer-Moore-Horspool}
 algorithm. These functions are also available in the
-@racket[string-searchers/bmh] module, without the @racketidfont{bmh-} prefix.
+@racket[string-searchers/bmh] module, without the @racketidfont{bmh-}
+prefix.
+
+@subsubsection{Strings}
 
 @defproc[(bmh-string-contains [haystack String] [needle String] [start Index 0] [end Index (string-length haystack)])
          (Option Index)]{
@@ -115,13 +120,14 @@ functions instead.
 
 @defproc[(bmh-make-matcher [pattern String] [#:case-insensitive case-insensitive? Boolean #f]) bmh-matcher]{
 
-Compiles a search string into a matcher object, optionally using case-insensitive searching.
+Compiles a search string into a matcher object, optionally using
+case-insensitive searching.
 
 }
 
 @defproc[(bmh-matcher? [obj Any]) Boolean]{
 
-Returns true if its argument is a bmh-matcher object.
+Returns true if its argument is a @racketidfont{bmh-matcher} object.
 
 }
 
@@ -140,7 +146,8 @@ Returns the search string for this matcher.
 @defproc[(bmh-find-string [m bmh-matcher] [text String] [start Index 0] [end Index (string-length text)])
          (Option Index)]{
 
-Return the index of the first occurance of the matcher's search string in text, or @racket[#f] if not found.
+Return the index of the first occurance of the matcher's search string
+in text, or @racket[#f] if not found.
 
 }
 
@@ -151,6 +158,57 @@ Return the indexes of all occurances of the matcher's search string in
 text, or an empty list if not found. If the overlap option is true,
 found matches can overlap - searching for @code{"bb"} in @code{"bbb"}
 will return @code{'(0 1)} when true, @code{'(0)} when false.
+
+}
+
+@subsubsection{Byte Strings}
+
+Note: There are no case-insensitive routines for byte strings.
+
+@defproc[(bmh-byte-string-contains [haystack Bytes] [needle Bytes] [start Index 0] [end Index (bytes-length haystack)])
+         (Option Index)]{
+
+Returns the first index of haystack where needle occurs, or
+@racket[#f] if not found. If searching for the same substring many
+times, prefer compiling a matcher object and using the following
+functions instead.
+
+}
+
+@defproc[(bmh-make-byte-matcher [pattern Bytes]) bmh-byte-matcher]{
+
+Return a new matcher that searches for the given byte string.
+
+}
+
+@defproc[(bmh-byte-matcher? [obj Any]) Boolean]{
+
+Returns true if its argument is a @racketidfont{bmh-byte-matcher} object.
+
+}
+
+@defproc[(bmh-byte-matcher-pattern [m bmh-byte-matcher]) Bytes]{
+
+Returns the search byte string for this matcher.
+
+}
+
+@defproc[(bmh-find-byte-string [m bmh-byte-matcher] [text Bytes] [start Index 0] [end Index (bytes-length text)])
+         (Option Index)]{
+
+Return the index of the first occurance of the matcher's search byte
+string in text, or @racket[#f] if not found.
+
+}
+
+@defproc[(bmh-find-all-byte-strings [m bmh-byte-matcher] [text Bytes] [start Index 0] [end Index (bytes-length text)] [#:overlap overlap? Boolean #t])
+         (Listof Index)]{
+
+Return the indexes of all occurances of the matcher's search byte
+string in text, or an empty list if not found. If the overlap option
+is true, found matches can overlap - searching for @code{#"bb"} in
+@code{#"bbb"} will return @code{'(0 1)} when true, @code{'(0)} when
+false.
 
 }
 

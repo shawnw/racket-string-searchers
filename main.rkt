@@ -122,6 +122,13 @@
   (check-equal? (bmh-find-all-strings bmh-bb "bbb") '(0 1))
   (check-equal? (bmh-find-all-strings bmh-bb "bbb" #:overlap #f) '(0))
 
+  (check-not-false (bmh-byte-string-contains #"foo bar baz" #"baz"))
+  (check-false (bmh-byte-string-contains #"foo bar bad" #"baz"))
+  (define bmh-bs-bb (bmh-make-byte-matcher #"bb"))
+  (check-equal? (bmh-find-byte-string bmh-bs-bb #"goobfbball") 5)
+  (check-equal? (bmh-find-all-byte-strings bmh-bs-bb #"bbb") '(0 1))
+  (check-equal? (bmh-find-all-byte-strings bmh-bs-bb #"bbb" #:overlap #f) '(0))
+
   (define ac (ahoc-make-matcher "aa" "bb" "bba" "cc"))
   (check-pred ahoc-matcher? ac)
   (check-equal? (ahoc-matcher-patterns ac) '("aa" "bb" "bba" "cc"))

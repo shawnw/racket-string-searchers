@@ -2,7 +2,7 @@
 
 ;;; Utility functions used by the searcher modules
 
-(provide hash-ref/default substring=? substring-ci=? String= check-substring-spec)
+(provide hash-ref/default substring=? substring-ci=? String= check-substring-spec subbytes=?)
 
 ;;; Taken from SRFI-13 reference. Most of these checks aren't needed in Typed Racket
 (: substring-spec-ok? (-> String Index Index Boolean))
@@ -23,6 +23,7 @@
       (error "Illegal substring spec." proc s start end)))
 
 (define-type String= (-> String Index String Boolean))
+(define-type Bytes= (-> Bytes Index Bytes Boolean))
 
 (: hash-ref/default (All (k v) (-> (HashTable k v) k v v)))
 (define (hash-ref/default table key default)
@@ -48,3 +49,9 @@
 (: substring-ci=? String=)
 (define (substring-ci=? text start pat)
   (str= char-ci=? text start pat))
+
+(: subbytes=? Bytes=)
+(define (subbytes=? text start pat)
+  (for/and : Boolean ([i (in-naturals start)]
+                      [j (in-range (bytes-length pat))])
+    (= (bytes-ref text i) (bytes-ref pat j))))

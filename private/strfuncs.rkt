@@ -4,23 +4,14 @@
 
 (provide hash-ref/default substring=? substring-ci=? String= check-substring-spec subbytes=?)
 
-;;; Taken from SRFI-13 reference. Most of these checks aren't needed in Typed Racket
-(: substring-spec-ok? (-> String Index Index Boolean))
-(define (substring-spec-ok? s start end)
-  (and ;(string? s)
-       ;(integer? start)
-       ;(exact? start)
-       ;(integer? end)
-       ;(exact? end)
-       (<= 0 start)
-       (<= start end)
-       (<= end (string-length s))))
-
-;;; Taken from SRFI-13 reference
-(: check-substring-spec (-> Any String Index Index Any))
+(: check-substring-spec (-> Symbol String Index Index Void))
 (define (check-substring-spec proc s start end)
-  (unless (substring-spec-ok? s start end)
-      (error "Illegal substring spec." proc s start end)))
+  (cond
+    ((or (< start 0) (> start (string-length s)))
+     (raise-range-error proc "string" "starting " start s 0 (string-length s) #f))
+    ((or (> start end) (> end (string-length s)))
+     (raise-range-error proc "string" "ending " end s start (string-length s) 0))
+    (else (void))))
 
 (define-type String= (-> String Index String Boolean))
 (define-type Bytes= (-> Bytes Index Bytes Boolean))

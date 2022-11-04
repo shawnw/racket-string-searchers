@@ -4,7 +4,7 @@
 
 (require "private/strfuncs.rkt")
 
-(provide matcher? make-matcher matcher-patterns find-string find-all-strings)
+(provide matcher? make-matcher list->matcher matcher-patterns find-string find-all-strings)
 
 (struct node ([ch : Char] [word : (Option String)] [parent : (Option node)] [suffix : (Option node)]
               [dict-suffix : (Option node)] [children : (Mutable-HashTable Char node)])
@@ -86,9 +86,13 @@
 
 (struct matcher ([patterns : (Listof String)] [root : node]))
 
-(: make-matcher (->* (String) () #:rest String matcher))
-(define (make-matcher s . rst)
-  (let* ([patterns (map string->immutable-string (cons s rst))]
+(: make-matcher (String * -> matcher))
+(define (make-matcher . strings)
+  (list->matcher strings))
+
+(: list->matcher ((Listof String) -> matcher))
+(define (list->matcher strings)
+  (let* ([patterns (map string->immutable-string strings)]
          [table : (Mutable-HashTable Char node) (make-hasheqv)]
          [root (node #\u0000 #f #f #f #f table)])
     (for ([str : String (in-list patterns)]) (insert-string! table str))

@@ -30,7 +30,8 @@
          (prefix-in ahoc- "ahoc.rkt"))
 (provide (all-from-out "kmp.rkt")
          (all-from-out "bmh.rkt")
-         (all-from-out "ahoc.rkt"))
+         (except-out (all-from-out "ahoc.rkt") ahoc-list->matcher)
+         (rename-out [ahoc-list->matcher list->ahoc-matcher]))
 
 (module+ test
   ;; Any code in this `test` submodule runs when this file is run using DrRacket
@@ -130,11 +131,15 @@
   (check-equal? (bmh-find-all-byte-strings bmh-bs-bb #"bbb" #:overlap #f) '(0))
 
   (define ac (ahoc-make-matcher "aa" "bb" "bba" "cc"))
+  (define ac2 (ahoc-list->matcher '("aa" "bb" "bba" "cc")))
   (check-pred ahoc-matcher? ac)
+  (check-pred ahoc-matcher? ac2)
   (check-equal? (ahoc-matcher-patterns ac) '("aa" "bb" "bba" "cc"))
   (check-equal? (ahoc-find-string ac "foobbar") '(3 . "bb"))
+  (check-equal? (ahoc-find-string ac2 "foobbar") '(3 . "bb"))
   (check-false (ahoc-find-string ac "fnord"))
   (check-equal? (ahoc-find-all-strings ac "foobbor") '((3 . "bb")))
+  (check-equal? (ahoc-find-all-strings ac2 "foobbor") '((3 . "bb")))
   (check-equal? (ahoc-find-all-strings ac "fnord") '())
   (check-equal? (ahoc-find-all-strings ac "foobbaar") '((3 . "bb") (3 . "bba") (5 . "aa")))
   )

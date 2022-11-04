@@ -224,9 +224,16 @@ algorithm. These functions are also available in the
 @racket[string-searchers/ahoc] module, without the
 @racketidfont{ahoc-} prefix.
 
-@defproc[(ahoc-make-matcher [s0 String] [s1 String] ...) ahoc-matcher]{
+@defproc[(ahoc-make-matcher [s String] ...) ahoc-matcher]{
 
 Create a new Aho-Corasick matcher object that looks for the given string(s).
+
+}
+
+@defproc[(list->ahoc-matcher [strings (Listof String)]) ahoc-matcher]{
+
+Create a new Aho-Corasick matcher object that looks for the string(s)
+in the given list.
 
 }
 

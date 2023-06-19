@@ -2,7 +2,7 @@
 
 ;;; Boyer-Moore-Horspool string searching
 
-(require "private/strfuncs.rkt")
+(require "private/strfuncs.rkt" racket/fixnum)
 
 (provide string-contains string-contains-ci
          make-matcher matcher? matcher-ci? matcher-pattern
@@ -41,12 +41,12 @@
 (define (make-ci-table pat)
   (let ([patlen (string-length pat)])
     (for/fold : (Immutable-HashTable Char Index)
-              ([acc : (Immutable-HashTable Char Index) (make-immutable-hasheqv)])
-              ([i (in-range (- patlen 1))])
+              ([acc : (Immutable-HashTable Char Index) (hasheqv)])
+              ([i (in-range (fx- patlen 1))])
       (let* ([c (string-ref pat i)]
              [uc (char-upcase c)]
              [lc (char-downcase c)]
-             [len (assert (- patlen 1 i) index?)])
+             [len (assert (fx- (fx- patlen 1) i) index?)])
         (if (char=? uc lc)
             (hash-set acc uc len)
             (hash-set* acc uc len lc len))))))
@@ -54,8 +54,8 @@
 (: make-table (-> String (Immutable-HashTable Char Index)))
 (define (make-table pat)
   (let ([patlen (string-length pat)])
-    (for/hasheqv : (Immutable-HashTable Char Index) ([i (in-range (- patlen 1))])
-      (values (string-ref pat i) (assert (- patlen 1 i) index?)))))
+    (for/hasheqv : (Immutable-HashTable Char Index) ([i (in-range (fx- patlen 1))])
+      (values (string-ref pat i) (assert (fx- (fx- patlen 1) i) index?)))))
 
 (: make-matcher (->* (String) (#:case-insensitive Boolean) matcher))
 (define (make-matcher pat #:case-insensitive [case-insensitive? #f])
@@ -72,9 +72,9 @@
          [s= (matcher-s= m)]
          [pat (matcher-pattern m)]
          [patlen (string-length pat)]
-         [textlen (+ start (- end start))])
+         [textlen (fx+ start (fx- end start))])
     (let loop ([skip : Index start])
-      (if (>= (- textlen skip) patlen)
+      (if (>= (fx- textlen skip) patlen)
           (if (s= text skip pat)
                 skip
               (loop (assert (+ skip (hash-ref/default table (string-ref text (- (+ skip patlen) 1)) patlen)) index?)))
@@ -91,11 +91,11 @@
   (let* ([patlen (string-length (matcher-pattern m))]
          [offset : Index (if overlap? 1 patlen)])
     (let loop ([acc : (Listof Index) '()]
-               [start : Index start])
+               [start : Nonnegative-Fixnum start])
       (if (< start end)
           (let ([pos (%find-string m text start end)])
             (if pos
-                (loop (cons pos acc) (assert (+ pos offset) index?))
+                (loop (cons pos acc) (+ pos offset))
                 (reverse acc)))
           (reverse acc)))))
 
@@ -123,7 +123,7 @@
   (let* ([patlen : Index (bytes-length pat)]
          [table : (Mutable-Vectorof Index) (make-vector 256 patlen)])
     (for ([i (in-range (- patlen 1))])
-      (vector-set! table (bytes-ref pat i) (assert (- patlen 1 i) index?)))
+      (vector-set! table (bytes-ref pat i) (assert (fx- (fx- patlen 1) i) index?)))
     table))
 
 (: make-byte-matcher (-> Bytes byte-matcher))
@@ -135,12 +135,12 @@
   (let* ([table (byte-matcher-table m)]
          [pat (byte-matcher-pattern m)]
          [patlen (bytes-length pat)]
-         [textlen (+ start (- end start))])
+         [textlen (fx+ start (fx- end start))])
     (let loop ([skip : Index start])
-      (if (>= (- textlen skip) patlen)
+      (if (>= (fx- textlen skip) patlen)
           (if (subbytes=? text skip pat)
               skip
-              (loop (assert (+ skip (vector-ref table (bytes-ref text (- (+ skip patlen) 1)))) index?)))
+              (loop (assert (fx+ skip (vector-ref table (bytes-ref text (fx- (fx+ skip patlen) 1)))) index?)))
           #f))))
 
 (: find-byte-string (->* (byte-matcher Bytes) (Index Index) (Option Index)))
@@ -153,11 +153,11 @@
   (let* ([patlen (bytes-length (byte-matcher-pattern m))]
          [offset : Index (if overlap? 1 patlen)])
     (let loop ([acc : (Listof Index) '()]
-               [start : Index start])
+               [start : Nonnegative-Fixnum start])
       (if (< start end)
           (let ([pos (%find-byte-string m text start end)])
             (if pos
-                (loop (cons pos acc) (assert (+ pos offset) index?))
+                (loop (cons pos acc) (+ pos offset))
                 (reverse acc)))
           (reverse acc)))))
 

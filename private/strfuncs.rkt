@@ -20,18 +20,11 @@
 (define (hash-ref/default table key default)
   (hash-ref table key (lambda () default)))
 
-(define-syntax-rule (str= c=? text start pat)
+(: str= ((Char Char -> Boolean) String Index String -> Boolean))
+(define (str= c=? text start pat)
   (for/and : Boolean ([i (in-naturals start)]
                       [j (in-range (string-length pat))])
     (c=? (string-ref text i) (string-ref pat j))))
-
-#;(define-syntax-rule (str= c=? text start pat)
-  (let ([patlen (string-length pat)])
-    (let loop ([i start]
-               [j 0])
-      (cond ((= j patlen) #t)
-            ((c=? (string-ref text i) (string-ref pat j)) (loop (+ i 1) (+ j 1)))
-            (else #f)))))
 
 (: substring=? String=)
 (define (substring=? text start pat)

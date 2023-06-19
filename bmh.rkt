@@ -100,7 +100,8 @@
           (reverse acc)))))
 
 
-(define-syntax-rule (%string-contains case-insensitive? text pat start end)
+(: %string-contains (Boolean String String Index Index -> (Option Index)))
+(define (%string-contains case-insensitive? text pat start end)
   (let ([bmh (make-matcher pat #:case-insensitive case-insensitive?)])
     (%find-string bmh text start end)))
 

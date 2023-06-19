@@ -43,17 +43,17 @@
          (set-node-dict-suffix! n (node-dict-suffix root))))
     (else
      (let ([ch (node-ch n)])
-       (let loop ([better (cast (node-suffix (cast (node-parent n) node)) node)])
+       (let loop ([better (assert (node-suffix (assert (node-parent n) node?)) node?)])
          (cond
            ((hash-has-key? (node-children better) ch)
             (set-node-suffix! n (hash-ref (node-children better) ch)))
            ((eq? better root)
             (set-node-suffix! n root))
            (else
-            (loop (cast (node-suffix better) node))))))
+            (loop (assert (node-suffix better) node?))))))
      (if (node-word n)
          (set-node-dict-suffix! n n)
-         (set-node-dict-suffix! n (node-dict-suffix (cast (node-suffix n) node)))))))
+         (set-node-dict-suffix! n (node-dict-suffix (assert (node-suffix n) node?)))))))
 
 (require/typed data/queue
   [#:opaque NodeQueue queue?]
@@ -115,14 +115,14 @@
            (set! current (hash-ref (node-children current) ch)))
           ((eq? current root) (void))
           (else
-           (set! current (cast (node-suffix current) node))
+           (set! current (assert (node-suffix current) node?))
            (loop))))
-      (let ([check (cast (node-dict-suffix current) node)])
+      (let ([check (assert (node-dict-suffix current) node?)])
         (cond
           ((eq? check root) #f)
           ((string? (node-word check))
-           (cons (cast (- (+ i 1) (string-length (cast (node-word check) String))) Index)
-                 (cast (node-word check) String)))
+           (cons (assert (- (+ i 1) (string-length (assert (node-word check) string?))) index?)
+                 (assert (node-word check) string?)))
           (else #f))))))
 
 (: find-all-strings (->* (matcher String) (Index Index) (Listof (Pair Index String))))
@@ -141,13 +141,13 @@
            (set! current (hash-ref (node-children current) ch)))
           ((eq? current root) (void))
           (else
-           (set! current (cast (node-suffix current) node))
+           (set! current (assert (node-suffix current) node?))
            (loop))))
-      (let ([check (cast (node-dict-suffix current) node)])
+      (let ([check (assert (node-dict-suffix current) node?)])
         (cond
           ((eq? check root) results)
           ((node-word check)
-           (cons (cons (cast (- (+ i 1) (string-length (cast (node-word check) String))) Index)
-                       (cast (node-word check) String))
+           (cons (cons (assert (- (+ i 1) (string-length (assert (node-word check) string?))) index?)
+                       (assert (node-word check) string?))
                  results))
           (else results))))))

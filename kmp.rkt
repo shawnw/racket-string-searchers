@@ -4,7 +4,7 @@
 
 (define-type Char= (-> Char Char Boolean))
 
-(require "private/strfuncs.rkt")
+(require "private/strfuncs.rkt" racket/fixnum)
 (provide string-contains string-contains-ci make-matcher matcher?
          matcher-ci? matcher-pattern find-string find-all-strings)
 
@@ -37,34 +37,34 @@
 ;;;    a b d  a b x
 ;;; #(-1 0 0 -1 1 2)
 
-(: make-kmp-restart-vector (->* (String) (Char= Index Index) (Vectorof Integer)))
+(: make-kmp-restart-vector (->* (String) (Char= Index Index) FxVector))
 (define (make-kmp-restart-vector pattern [c= char=?] [start 0] [end (string-length pattern)])
     (let* ((rvlen (- end start))
-	   (rv (make-vector rvlen -1)))
+	   (rv (make-fxvector rvlen -1)))
       (when (> rvlen 0)
 	  (let ((rvlen-1 (- rvlen 1))
 		(c0 (string-ref pattern start)))
 
 	    ;; Here's the main loop. We have set rv[0] ... rv[i].
 	    ;; K = I + START -- it is the corresponding index into PATTERN.
-	    (let lp1 ((i 0) (j -1) (k start))
+	    (let lp1 ((i : Index 0) (j : Fixnum -1) (k : Index start))
 	      (when (< i rvlen-1)
 		  ;; lp2 invariant:
 		  ;;   pat[(k-j) .. k-1] matches pat[start .. start+j-1]
 		  ;;   or j = -1.
-		  (let lp2 ((j j))
+		  (let lp2 ((j : Fixnum j))
 		    (cond ((= j -1)
-			   (let ((i1 (+ 1 i)))
+			   (let ((i1 (assert (+ 1 i) index?)))
 			     (when (not (c= (string-ref pattern (+ k 1)) c0))
-				 (vector-set! rv i1 0))
-			     (lp1 i1 0 (+ k 1))))
+				 (fxvector-set! rv i1 0))
+			     (lp1 i1 0 (assert (+ k 1) index?))))
 			  ;; pat[(k-j) .. k] matches pat[start..start+j].
-			  ((c= (string-ref pattern k) (string-ref pattern (+ j start)))
-			   (let* ((i1 (+ 1 i))
-				  (j1 (+ 1 j)))
-			     (vector-set! rv i1 j1)
-			     (lp1 i1 j1 (+ k 1))))
-			  (else (lp2 (vector-ref rv j)))))))))
+			  ((c= (string-ref pattern k) (string-ref pattern (fx+ j start)))
+			   (let* ((i1 (assert (+ 1 i) index?))
+				  (j1 (fx+ 1 j)))
+			     (fxvector-set! rv i1 j1)
+			     (lp1 i1 j1 (assert (+ k 1) index?))))
+			  (else (lp2 (fxvector-ref rv j)))))))))
       rv))
 
 ;;; Knuth-Morris-Pratt string searching
@@ -86,25 +86,25 @@
 
 (: %kmp-search (-> String String Char= Index Index Index Index (Option Index)))
 (define (%kmp-search pattern text c= p-start p-end t-start t-end)
-  (let ((plen (- p-end p-start))
+  (let ((plen : Index (assert (- p-end p-start) index?))
 	(rv (make-kmp-restart-vector pattern c= p-start p-end)))
 
     ;; The search loop. TJ & PJ are redundant state.
-    (let lp ((ti t-start) (pi 0)
-	     (tj (- t-end t-start)) ; (- tlen ti) -- how many chars left.
-	     (pj plen))		 ; (- plen pi) -- how many chars left.
+    (let lp ((ti : Index t-start) (pi : Fixnum 0)
+	     (tj : Index (assert (- t-end t-start) index?)) ; (- tlen ti) -- how many chars left.
+	     (pj : Index plen))		 ; (- plen pi) -- how many chars left.
 
       (if (= pi plen)
 	  (assert (- ti plen) index?)			; Win.
 	  (and (<= pj tj)		; Lose.
 	       (if (c= (string-ref text ti) ; Search.
-		       (string-ref pattern (+ p-start pi)))
-		   (lp (+ 1 ti) (+ 1 pi) (- tj 1) (- pj 1)) ; Advance.
+		       (string-ref pattern (fx+ p-start pi)))
+		   (lp (assert (+ 1 ti) index?) (assert (fx+ 1 pi) index?) (assert (- tj 1) index?) (assert (- pj 1) index?)) ; Advance.
 		   
-		   (let ((pi (vector-ref rv pi))) ; Retreat.
+		   (let ((pi (fxvector-ref rv pi))) ; Retreat.
 		     (if (= pi -1)
-			 (lp (+ ti 1) 0  (- tj 1) plen) ; Punt.
-			 (lp ti       pi tj       (- plen pi))))))))))
+			 (lp (assert (+ ti 1) index?) 0 (assert (- tj 1) index?) plen) ; Punt.
+			 (lp ti                       pi tj                      (assert (fx- plen pi) index?))))))))))
 
 (: string-contains (->* (String String) (Index Index) (Option Index)))
 (define (string-contains text pattern [t-start 0] [t-end (string-length text)])
@@ -116,7 +116,7 @@
   (check-substring-spec 'string-contains-ci text t-start t-end)
   (%kmp-search pattern text char-ci=? 0 (string-length pattern) t-start t-end))
 
-(struct matcher ([pattern : String] [vec : (Vectorof Integer)] [c= : Char=]))
+(struct matcher ([pattern : String] [vec : FxVector] [c= : Char=]))
 
 (: make-matcher (->* (String) (#:case-insensitive Boolean) matcher))
 (define (make-matcher pat #:case-insensitive [case-insensitive? #f])
@@ -153,22 +153,22 @@
          [rv (matcher-vec m)]
          [c= (matcher-c= m)])
     ;; The search loop. TJ & PJ are redundant state.
-    (let lp ([ti start]
-             [pi 0]
-             [tj (assert (- end start) index?)] ; (- tlen ti) -- how many chars left.
-             [pj plen])        ; (- plen pi) -- how many chars left.
+    (let lp ([ti : Index start]
+             [pi : Fixnum 0]
+             [tj : Index (assert (- end start) index?)] ; (- tlen ti) -- how many chars left.
+             [pj : Index plen])        ; (- plen pi) -- how many chars left.
 
       (if (= pi plen)
           (assert (- ti plen) index?)                 ; Win.
           (and (<= pj tj)             ; Lose.
                (if (c= (string-ref text ti) ; Search.
                        (string-ref pattern pi))
-               (lp (+ ti 1) (+ pi 1) (- tj 1) (- pj 1)) ; Advance.
+               (lp (assert (+ ti 1) index?) (fx+ pi 1) (assert (- tj 1) index?) (assert (- pj 1) index?)) ; Advance.
 
-               (let ([pi (vector-ref rv pi)]) ; Retreat.
+               (let ([pi (fxvector-ref rv pi)]) ; Retreat.
                  (if (= pi -1)
-                   (lp (+ ti 1) 0  (- tj 1) plen) ; Punt.
-                   (lp ti       pi tj       (- plen pi))))))))))
+                   (lp (assert (+ ti 1) index?) 0  (assert (- tj 1) index?) plen) ; Punt.
+                   (lp ti       pi tj       (assert (fx- plen pi) index?))))))))))
 
 (: find-string (->* (matcher String) (Index Index) (Option Index)))
 (define (find-string m text [start 0] [end (string-length text)])

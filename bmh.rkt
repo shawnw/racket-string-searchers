@@ -46,7 +46,7 @@
       (let* ([c (string-ref pat i)]
              [uc (char-upcase c)]
              [lc (char-downcase c)]
-             [len (cast (- patlen 1 i) Index)])
+             [len (assert (- patlen 1 i) index?)])
         (if (char=? uc lc)
             (hash-set acc uc len)
             (hash-set* acc uc len lc len))))))
@@ -55,7 +55,7 @@
 (define (make-table pat)
   (let ([patlen (string-length pat)])
     (for/hasheqv : (Immutable-HashTable Char Index) ([i (in-range (- patlen 1))])
-      (values (string-ref pat i) (cast (- patlen 1 i) Index)))))
+      (values (string-ref pat i) (assert (- patlen 1 i) index?)))))
 
 (: make-matcher (->* (String) (#:case-insensitive Boolean) matcher))
 (define (make-matcher pat #:case-insensitive [case-insensitive? #f])
@@ -77,7 +77,7 @@
       (if (>= (- textlen skip) patlen)
           (if (s= text skip pat)
                 skip
-              (loop (cast (+ skip (hash-ref/default table (string-ref text (- (+ skip patlen) 1)) patlen)) Index)))
+              (loop (assert (+ skip (hash-ref/default table (string-ref text (- (+ skip patlen) 1)) patlen)) index?)))
           #f))))
 
 (: find-string (->* (matcher String) (Index Index) (Option Index)))
@@ -95,7 +95,7 @@
       (if (< start end)
           (let ([pos (%find-string m text start end)])
             (if pos
-                (loop (cons pos acc) (cast (+ pos offset) Index))
+                (loop (cons pos acc) (assert (+ pos offset) index?))
                 (reverse acc)))
           (reverse acc)))))
 
@@ -123,7 +123,7 @@
   (let* ([patlen : Index (bytes-length pat)]
          [table : (Mutable-Vectorof Index) (make-vector 256 patlen)])
     (for ([i (in-range (- patlen 1))])
-      (vector-set! table (bytes-ref pat i) (cast (- patlen 1 i) Index)))
+      (vector-set! table (bytes-ref pat i) (assert (- patlen 1 i) index?)))
     table))
 
 (: make-byte-matcher (-> Bytes byte-matcher))
@@ -140,7 +140,7 @@
       (if (>= (- textlen skip) patlen)
           (if (subbytes=? text skip pat)
               skip
-              (loop (cast (+ skip (vector-ref table (bytes-ref text (- (+ skip patlen) 1)))) Index)))
+              (loop (assert (+ skip (vector-ref table (bytes-ref text (- (+ skip patlen) 1)))) index?)))
           #f))))
 
 (: find-byte-string (->* (byte-matcher Bytes) (Index Index) (Option Index)))
@@ -157,7 +157,7 @@
       (if (< start end)
           (let ([pos (%find-byte-string m text start end)])
             (if pos
-                (loop (cons pos acc) (cast (+ pos offset) Index))
+                (loop (cons pos acc) (assert (+ pos offset) index?))
                 (reverse acc)))
           (reverse acc)))))
 

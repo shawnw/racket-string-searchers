@@ -95,7 +95,7 @@
 	     (pj plen))		 ; (- plen pi) -- how many chars left.
 
       (if (= pi plen)
-	  (cast (- ti plen) Index)			; Win.
+	  (assert (- ti plen) index?)			; Win.
 	  (and (<= pj tj)		; Lose.
 	       (if (c= (string-ref text ti) ; Search.
 		       (string-ref pattern (+ p-start pi)))
@@ -155,11 +155,11 @@
     ;; The search loop. TJ & PJ are redundant state.
     (let lp ([ti start]
              [pi 0]
-             [tj (cast (- end start) Index)] ; (- tlen ti) -- how many chars left.
+             [tj (assert (- end start) index?)] ; (- tlen ti) -- how many chars left.
              [pj plen])        ; (- plen pi) -- how many chars left.
 
       (if (= pi plen)
-          (cast (- ti plen) Index)                 ; Win.
+          (assert (- ti plen) index?)                 ; Win.
           (and (<= pj tj)             ; Lose.
                (if (c= (string-ref text ti) ; Search.
                        (string-ref pattern pi))
@@ -185,6 +185,6 @@
       (if (< start end)
           (let ([pos (%find-string m text start end)])
             (if pos
-                (loop (cons pos acc) (cast (+ pos offset) Index))
+                (loop (cons pos acc) (assert (+ pos offset) index?))
                 (reverse acc)))
           (reverse acc)))))
